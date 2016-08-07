@@ -18,6 +18,7 @@ DHT dht(D4,DHT11);
 
 void setup() {
   pinMode(D0, OUTPUT); //Seta led como saida
+  pinMode(D1, OUTPUT);
   Serial.begin(115200); //Define comunicação com 115200bps
   dht.begin(); //Inicializa o sensor DHT11
 
@@ -35,6 +36,26 @@ void setup() {
   Serial.println(WiFi.localIP()); //Imprime o endereço IP do módulo
 
   mqtt.setServer(mqtt_server, 1883); //Defs. do servidor - end e porta
+  mqtt.setCallback(callBackMqtt);
+}
+
+
+void callBackMqtt(char* topic, byte* payload, unsigned int size){
+  Serial.print("Mensagem Sub: [");
+  Serial.print(topic);
+  Serial.println("]");
+  for(int i = 0; i < size; i++){
+    Serial.print( (char) payload[i]);
+  } 
+  Serial.println();
+
+  char comando = payload[0];
+
+  if (comando == '1'){
+    digitalWrite(D1, HIGH);
+  } else if (comando == '0'){
+    digitalWrite(D1,LOW);
+  }
 }
 
 void loop() {
@@ -49,7 +70,7 @@ void loop() {
   //3o - Exibicao via Serial
   Serial.println(msg);
 
-  sprintf(msg, "%d", luz);
+  sprintf(msg, "%d", temp);
   
   //4o - Evento ou Acao de Resposta
   if(luz < 500){
