@@ -9,7 +9,7 @@ char msg[50];
 
 const char* ssid ="CrazyTechLabs";
 const char* senha = "#iotweekend";
-const char* mqtt_server = "iot.eclipse.org";
+const char* mqtt_server = "test.mosquitto.org";
 
 WiFiClient espClient; //Objeto pra manipulação de WiFi
 PubSubClient mqtt(espClient); //Objeto para manipulação de mqtt com WiFi
@@ -48,6 +48,8 @@ void loop() {
   
   //3o - Exibicao via Serial
   Serial.println(msg);
+
+  sprintf(msg, "%d", luz);
   
   //4o - Evento ou Acao de Resposta
   if(luz < 500){
