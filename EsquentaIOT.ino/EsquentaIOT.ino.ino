@@ -1,5 +1,6 @@
 #include <DHT.h>
 #include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 int luz = 0;
 int temp;
@@ -10,7 +11,8 @@ const char* ssid ="CrazyTechLabs";
 const char* senha = "#iotweekend";
 const char* mqtt_server = "iot.eclipse.org";
 
-WiFiClient espClient;
+WiFiClient espClient; //Objeto pra manipulação de WiFi
+PubSubClient mqtt(espClient); //Objeto para manipulação de mqtt com WiFi
 
 DHT dht(D4,DHT11);
 
@@ -30,21 +32,24 @@ void setup() {
 
   Serial.println(); //Dá um "enter" - quebra de linha no serial
   Serial.println("ESP8266 Conectado no CrazyTechLabs!");
-  Serial.println(WiFi.localIP()); //Imprime o endereço IP do módulo!
-  
-  
-  
+  Serial.println(WiFi.localIP()); //Imprime o endereço IP do módulo
+
+  mqtt.setServer(mqtt_server, 1883); //Defs. do servidor - end e porta
 }
 
 void loop() {
+  //1o - Aquisicao dos sinais de sensores
   luz = analogRead(A0);
   temp = (int) dht.readTemperature();
   umid = (int) dht.readHumidity();
-
+  
+  //2o - Formatacao desses dados
   sprintf(msg, "Luz %d - Temp: %d - Umid: %d", luz, temp, umid);
   
+  //3o - Exibicao via Serial
   Serial.println(msg);
   
+  //4o - Evento ou Acao de Resposta
   if(luz < 500){
     Serial.println("Luz acesa");
     digitalWrite(D0, HIGH); //se luminosidade menor que 500 - acende led
@@ -53,5 +58,23 @@ void loop() {
     Serial.println("Luz apagada");
     digitalWrite(D0, LOW);
   }
-  delay(2000); //atraso de 2s para interface com sensor de temp/umid
+
+  //5o - Comunicacao via MQTT
+  if(mqtt.connected()){
+    //Se temos uma conexao com o Broker MQTT - Vamos enviar os dados!
+    mqtt.loop(); //eh um "ping" de conexao e atualiza dados com broker
+    Serial.println("Enviando Publish de Mensagem MQTT...");
+    Serial.println(msg);
+    mqtt.publish("andreCurvello", msg); //1o argumento é o nome do canal
+  } else {
+    Serial.println("Conectando no Broker MQTT...");
+    if (mqtt.connect("espCurvello")){ 
+      //Conecta com ID espCurvello...
+      mqtt.loop(); //ping com atualizacao de dados
+      mqtt.subscribe("andreCurvelloLeds"); //canal de subscribe
+    } else {
+      Serial.println("Nao foi possivel conectar!");
+    }
+  }
+  delay(5000); //atraso de 5s para interface com sensor de temp/umid
 }
