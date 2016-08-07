@@ -49,7 +49,7 @@ void callBackMqtt(char* topic, byte* payload, unsigned int size){
   } 
   Serial.println();
 
-  char comando = payload[0];
+  char comando = (char) payload[0];
 
   if (comando == '1'){
     digitalWrite(D1, HIGH);
